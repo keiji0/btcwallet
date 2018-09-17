@@ -1,8 +1,6 @@
 package core
 
 import (
-	"bytes"
-
 	ht "github.com/keiji0/btcwallet/util/hash"
 )
 
@@ -18,18 +16,10 @@ func NewAddress(netType NetworkType, pubKey *PublicKey) *Address {
 }
 
 // Bytes はビットコインアドレスのバイト列を返します
+// data = NetType(1) + ripem160(sh256(pubkey))
+// address = data + checksum(data)
 func (addr *Address) Bytes() []byte {
-	data := bytes.Join([][]byte{
-		[]byte{byte(addr.netType)},
-		ht.Ripemd160(ht.Sha256(addr.pubKey.UncompressData())),
-	}, []byte(""))
-
-	checksum := calcChecksum(data)
-	return bytes.Join([][]byte{data, checksum}, []byte(""))
-}
-
-// calcChecksum は受け取ったバイト列のチェックサムを計算します
-func calcChecksum(dt []byte) []byte {
-	hash := ht.Sha256x2(dt)
-	return hash[:4]
+	versionPrefix := byte(addr.netType)
+	payload := ht.Ripemd160(ht.Sha256(addr.pubKey.Data()))
+	return NewBase58Check(versionPrefix, payload).Bytes()
 }

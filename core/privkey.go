@@ -21,9 +21,8 @@ func GeneratePrivateKey(curve elliptic.Curve) (*PrivateKey, error) {
 	return &PrivateKey{key}, nil
 }
 
-// ImportPrivateKey は秘密鍵のバイト列から秘密鍵を生成します
-// pkByteにExportしたPrivateKeyのバイト列を渡します
-func ImportPrivateKey(curve elliptic.Curve, pkByte []byte) (*PrivateKey, error) {
+// ImportBytes は秘密鍵のバイト列から秘密鍵を生成します
+func ImportBytes(curve elliptic.Curve, pkByte []byte) (*PrivateKey, error) {
 	priv := ecdsa.PrivateKey{
 		D: new(big.Int).SetBytes(pkByte),
 	}
@@ -32,8 +31,8 @@ func ImportPrivateKey(curve elliptic.Curve, pkByte []byte) (*PrivateKey, error) 
 	return &PrivateKey{&priv}, nil
 }
 
-// ExportPrivateKey は生の秘密鍵をエクスポートします
-func (pk *PrivateKey) ExportPrivateKey() []byte {
+// Bytes は秘密鍵のバイトれるを取得します
+func (pk *PrivateKey) Bytes() []byte {
 	return pk.base.D.Bytes()
 }
 
