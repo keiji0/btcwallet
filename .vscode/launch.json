@@ -5,13 +5,15 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Launch test package",
+            "name": "TestConnection",
             "type": "go",
             "request": "launch",
             "mode": "test",
-            "program": "${workspaceRoot}/network",
+            "program": "${workspaceRoot}/p2p",
             "args": [
-                "-test.v"
+                "-test.v",
+                "-test.run",
+                "TestConnection"
             ]
         },
         {

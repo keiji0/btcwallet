@@ -12,7 +12,7 @@ type MsgVersion struct {
 	// ノードが提供するサービス一覧
 	Services ServiceFlags
 	// メッセージが作られた時刻
-	Timestamp time.Time
+	Timestamp Int64Time
 	// 受けてのネットワークアドレス
 	AddrRerv NetAddress
 	// ノードのネットワークアドレス
@@ -30,6 +30,22 @@ type MsgVersion struct {
 // Command はこのメッセージのコマンド名を返します
 func (v *MsgVersion) Command() string {
 	return "version"
+}
+
+// NewMsgVersion はMsgVersionメッセージを生成します
+func NewMsgVersion(rervAddr, fromAddr *NetAddress, nonce uint64, blockHeight int32) *MsgVersion {
+	v := &MsgVersion{
+		ProtocolVersion: CurrentVersion,
+		Services:        0,
+		Timestamp:       Int64Time(time.Unix(time.Now().Unix(), 0)),
+		AddrRerv:        *rervAddr,
+		AddrFrom:        *fromAddr,
+		Nonce:           nonce,
+		UserAgent:       DefaultUserAgent,
+		StartHeight:     blockHeight,
+		Relay:           false,
+	}
+	return v
 }
 
 // Serialize はMessageのPayloadをシリアライズする
@@ -62,20 +78,4 @@ func (v *MsgVersion) Deserialize(r io.Reader) error {
 		&v.StartHeight,
 		&v.Relay,
 	)
-}
-
-// NewMsgVersion はMsgVersionメッセージを生成します
-func NewMsgVersion(rervAddr, fromAddr *NetAddress, nonce uint64, blockHeight int32) *MsgVersion {
-	v := &MsgVersion{
-		ProtocolVersion: CurrentVersion,
-		Services:        0,
-		Timestamp:       time.Unix(time.Now().Unix(), 0),
-		AddrRerv:        *rervAddr,
-		AddrFrom:        *fromAddr,
-		Nonce:           nonce,
-		UserAgent:       DefaultUserAgent,
-		StartHeight:     blockHeight,
-		Relay:           false,
-	}
-	return v
 }

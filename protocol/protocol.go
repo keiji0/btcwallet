@@ -3,6 +3,7 @@ package protocol
 import (
 	"encoding/binary"
 	"net"
+	"time"
 
 	"github.com/keiji0/btcwallet/core"
 	"github.com/pkg/errors"
@@ -73,6 +74,14 @@ const (
 // https://en.bitcoin.it/wiki/Protocol_documentation#version
 type ServiceFlags uint64
 
+// const (
+// 	NodeNetwork       ServiceFlags = 1 << iota
+// 	NodeGetUTXO                    = 2
+// 	NodeBloom                      = 4
+// 	NodeWitness                    = 8
+// 	NodeNetworkLimted              = 1024
+// )
+
 // NetPort はネットワークアドレスのポート番号を表す型
 type NetPort uint16
 
@@ -82,6 +91,13 @@ type NetAddress struct {
 	IP       net.IP
 	Port     NetPort
 }
+
+// Uint32Time は32BitUintのタイムスタンプ型になります
+// Int64Timeとタイムスタンプ型が２つあるのでメッセージによって使い分けます
+type Uint32Time time.Time
+
+// Int64Time は32BitUintのタイムスタンプ型になります
+type Int64Time time.Time
 
 // DefaultUserAgent はこのクライアントのユーザーエージェント名
 const DefaultUserAgent = "/btcwire:0.1.0/"

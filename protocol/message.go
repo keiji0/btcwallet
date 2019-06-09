@@ -22,14 +22,6 @@ type Message interface {
 }
 
 // メッセージのデータ構造
-//
-// Field Size	Description	Data type	Comments
-// 4	magic	uint32_t	Magic value indicating message origin network, and used to seek to next message when stream state is unknown
-// 12	command	char[12]	ASCII string identifying the packet content, NULL padded (non-NULL padding results in packet rejected)
-// 4	length	uint32_t	Length of payload in number of bytes
-// 4	checksum	uint32_t	First 4 bytes of sha256(sha256(payload))
-//  ?	payload	uchar[]	The actual data
-//
 // https://en.bitcoin.it/wiki/Protocol_documentation#Message_structure
 
 // messageCommandSize はメッセージコマンドのバイトサイズ
@@ -65,22 +57,8 @@ func init() {
 	}
 }
 
-// CreateMessage は指定したコマンド名のメッセージを生成します
-func CreateMessage(command string) (Message, error) {
-	t, ok := messageMap[command]
-	if !ok {
-		return nil, errors.Errorf("メッセージコマンドが見つかりませんでした: %s", command)
-	}
-	i, ok := reflect.New(t).Interface().(Message)
-	if !ok {
-		return nil, errors.Errorf("Message Interfaceにキャストできませんでした: %q", t)
-	}
-	return i, nil
-}
-
 // Send はメッセージをネットワークに送信します
 func Send(w io.Writer, netType core.NetworkType, msg Message) (err error) {
-
 	h := messageHeader{}
 
 	// NetTypeからmagicを取得
@@ -122,7 +100,6 @@ func Send(w io.Writer, netType core.NetworkType, msg Message) (err error) {
 
 // Receive はネットワークからメッセージを受信します
 func Receive(r io.Reader) (Message, error) {
-
 	h, err := readMessageHeader(r)
 	if err != nil {
 		return nil, err
@@ -139,13 +116,29 @@ func Receive(r io.Reader) (Message, error) {
 
 	}
 
-	return nil, nil
-	// msg, err := newMessage(string(h.command))
-	// if err != nil {
-	// 	return nil, errors.Errorf("知らないコマンドを受信しました: command=%s", h.command)
-	// }
+	msg, err := newMessage(string(h.command[:]))
+	if err != nil {
+		return nil, err
+	}
 
-	// return msg, nil
+	if err := msg.Deserialize(r); err != nil {
+		return nil, err
+	}
+
+	return msg, nil
+}
+
+// newMessage は指定したコマンド名のメッセージを生成します
+func newMessage(command string) (Message, error) {
+	t, ok := messageMap[command]
+	if !ok {
+		return nil, errors.Errorf("メッセージコマンドが見つかりませんでした: %s", command)
+	}
+	i, ok := reflect.New(t).Interface().(Message)
+	if !ok {
+		return nil, errors.Errorf("Message Interfaceにキャストできませんでした: %q", t)
+	}
+	return i, nil
 }
 
 // readMessageHeader はMessageHeaderをネットワークから読み込みます

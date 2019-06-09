@@ -11,7 +11,7 @@ const (
 )
 
 // VersionPrefix はアドレスの種類を表す識別子
-// ref. https://en.bitcoin.it/wiki/List_of_address_prefixes
+// https://en.bitcoin.it/wiki/List_of_address_prefixes
 type VersionPrefix byte
 
 const (

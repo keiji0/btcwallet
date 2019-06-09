@@ -5,6 +5,7 @@ import (
 	"io"
 	"math"
 	"net"
+	"time"
 
 	"github.com/pkg/errors"
 )
@@ -12,8 +13,14 @@ import (
 // Serialize は値をプロトコルに応じたデータに変換してwに書き込みます
 func Serialize(w io.Writer, i interface{}) error {
 	switch v := i.(type) {
-	case uint8, uint16, uint32, uint64, ServiceFlags, [16]byte:
+	case bool, int8, int16, int32, int64, uint8, uint16, uint32, uint64, MessageMagic, ServiceFlags, Version, [16]byte, [messageCommandSize]byte, [messageChecksumSize]byte:
 		return binary.Write(w, defaultByteOrder, v)
+
+	case Uint32Time:
+		return Serialize(w, uint32(time.Time(v).Unix()))
+
+	case Int64Time:
+		return Serialize(w, int64(time.Time(v).Unix()))
 
 	case NetPort:
 		return binary.Write(w, binary.LittleEndian, v)
@@ -24,28 +31,48 @@ func Serialize(w io.Writer, i interface{}) error {
 	case string:
 		return serializeString(w, v)
 
+	case UserAgentName:
+		return serializeString(w, string(v))
+
 	case NetAddress:
 		return serializeNetAddress(w, v)
 
 	default:
 		return errors.Errorf("invalid type: %T", v)
 	}
+	return nil
 }
 
 // Deserialize はrからローカル環境で利用できるデータに変換してvに読み込みます
 func Deserialize(r io.Reader, i interface{}) error {
 	switch p := i.(type) {
-	case *uint8, *uint16, *uint32, *uint64, *ServiceFlags, *[16]byte:
+	case *bool, *int8, *int16, *int32,
+		*int64, *uint8, *uint16, *uint32, *uint64,
+		*MessageMagic, *ServiceFlags, *Version,
+		*[16]byte, *[messageCommandSize]byte, *[messageChecksumSize]byte:
+
 		if err := binary.Read(r, defaultByteOrder, p); err != nil {
 			return errors.Wrapf(err, "読み込みに失敗しました: %T", p)
 		}
-		return nil
+
+	case *Uint32Time:
+		var v uint32
+		if err := Deserialize(r, &v); err != nil {
+			return err
+		}
+		*p = Uint32Time(time.Unix(int64(v), 0))
+
+	case *Int64Time:
+		var v uint64
+		if err := Deserialize(r, &v); err != nil {
+			return err
+		}
+		*p = Int64Time(time.Unix(int64(v), 0))
 
 	case *NetPort:
 		if err := binary.Read(r, binary.LittleEndian, p); err != nil {
 			return errors.Wrapf(err, "読み込みに失敗しました: %T", p)
 		}
-		return nil
 
 	case *VarUint:
 		return deserializeVarUint(r, p)
@@ -53,12 +80,20 @@ func Deserialize(r io.Reader, i interface{}) error {
 	case *string:
 		return deserializeString(r, p)
 
+	case *UserAgentName:
+		var s string
+		if err := deserializeString(r, &s); err != nil {
+			return err
+		}
+		*p = UserAgentName(s)
+
 	case *NetAddress:
 		return deserializeNetAddress(r, p)
 
 	default:
 		return errors.Errorf("invalid type: %T", i)
 	}
+	return nil
 }
 
 // BulkSerialize は一括でシリアライズをします
